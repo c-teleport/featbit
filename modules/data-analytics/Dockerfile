@@ -45,6 +45,6 @@ RUN chmod +x start.sh docker-entrypoint.sh wait-for-it.sh
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 RUN opentelemetry-bootstrap -a install
-EXPOSE 80
+EXPOSE 8082
 ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["/usr/bin/supervisord","-c","supervisord.conf"]
