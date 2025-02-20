@@ -82,6 +82,7 @@ export interface IOrganization {
   id: string,
   initialized: boolean,
   name: string,
+  key: string,
   defaultPermissions: IOrganizationPermissions
 }
 
@@ -91,7 +92,8 @@ export enum LicenseFeatureEnum {
   Schedule = 'schedule',
   ChangeRequest = 'change-request',
   MultiOrg = 'multi-organization',
-  GlobalUser = 'global-user'
+  GlobalUser = 'global-user',
+  ShareableSegment = 'shareable-segment',
 }
 
 export interface ILicense {
@@ -106,17 +108,26 @@ export interface ILicense {
 
 export class License {
   data: ILicense;
-  constructor(private licenseStr: string) {
+  constructor(licenseStr: string) {
     this.data = licenseStr ? JSON.parse(atob(licenseStr.split('.')[1])): null;
   }
 
   isGranted(feature: LicenseFeatureEnum): boolean {
-    return this.data?.features?.includes(feature) || this.data?.features?.includes(LicenseFeatureEnum.Asterisk);
+    if (!this.data) {
+      return false;
+    }
+
+    if (this.data.exp < new Date().getTime()) {
+      return false;
+    }
+
+    return this.data.features?.includes(feature) || this.data.features?.includes(LicenseFeatureEnum.Asterisk);
   }
 }
 
 export interface IOnboarding {
   organizationName: string,
+  organizationKey: string,
   projectName: string,
   projectKey: string,
   environments: string[]

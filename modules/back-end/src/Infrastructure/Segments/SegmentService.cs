@@ -13,28 +13,33 @@ public class SegmentService : MongoDbService<Segment>, ISegmentService
     {
     }
 
-    public async Task<PagedResult<Segment>> GetListAsync(Guid envId, SegmentFilter userFilter)
+    public async Task<PagedResult<Segment>> GetListAsync(Guid workspaceId, string rn, SegmentFilter userFilter)
     {
         var filterBuilder = Builders<Segment>.Filter;
 
         var filters = new List<FilterDefinition<Segment>>
         {
-            // envId
-            filterBuilder.Eq(segment => segment.EnvId, envId),
+            // workspace filter
+            filterBuilder.Where(x => x.WorkspaceId == workspaceId),
+
+            // rn filter
+            filterBuilder.Where(x => x.Scopes.Any(y => $"{rn}:".StartsWith(string.Concat(y, ":"))))
         };
 
         // name filter
         var name = userFilter.Name;
         if (!string.IsNullOrWhiteSpace(name))
         {
-            var nameFilter = filterBuilder.Where(segment =>
-                segment.Name.StartsWith(name, StringComparison.CurrentCultureIgnoreCase));
+            var nameFilter = filterBuilder.Where(
+                segment => segment.Name.Contains(name, StringComparison.CurrentCultureIgnoreCase)
+            );
             filters.Add(nameFilter);
         }
 
+        // archived filter
         var isArchivedFilter = filterBuilder.Eq(segment => segment.IsArchived, userFilter.IsArchived);
         filters.Add(isArchivedFilter);
-        
+
         var filter = filterBuilder.And(filters);
 
         var totalCount = await Collection.CountDocumentsAsync(filter);
@@ -49,21 +54,25 @@ public class SegmentService : MongoDbService<Segment>, ISegmentService
         return new PagedResult<Segment>(totalCount, items);
     }
 
-    public async Task<IEnumerable<Segment>> GetListAsync(Guid[] ids)
+    public async Task<ICollection<Segment>> GetListAsync(Guid workspaceId, string rn, bool includeArchived = false)
     {
-        var segments = await Queryable
-            .Where(x => ids.Contains(x.Id))
-            .ToListAsync();
+        var query = Queryable
+            .Where(x => x.WorkspaceId == workspaceId && x.Scopes.Any(y => $"{rn}:".StartsWith(string.Concat(y, ":"))));
 
-        return segments;
+        if (!includeArchived)
+        {
+            query = query.Where(x => !x.IsArchived);
+        }
+
+        return await query.ToListAsync();
     }
 
     public async Task DeleteAsync(Guid id)
     {
         await Collection.DeleteOneAsync(x => x.Id == id);
     }
-    
-    public async Task<IEnumerable<FlagReference>> GetFlagReferencesAsync(Guid envId, Guid id)
+
+    public async Task<ICollection<FlagReference>> GetFlagReferencesAsync(Guid envId, Guid id)
     {
         var segmentId = id.ToString();
 
@@ -82,7 +91,12 @@ public class SegmentService : MongoDbService<Segment>, ISegmentService
             Key = x.Key
         });
 
-        var flags = await query.ToListAsync();
-        return flags;
+        var references = await query.ToListAsync();
+        foreach (var reference in references)
+        {
+            reference.EnvId = envId;
+        }
+
+        return references;
     }
 }
