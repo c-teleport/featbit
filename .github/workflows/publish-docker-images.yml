@@ -29,18 +29,18 @@ jobs:
     strategy:
       matrix:
         include:
-#          - app: c-teleport/featbit-ui
-#            build-dir: modules/front-end
-#            file: ./Dockerfile
+          - app: c-teleport/featbit-ui
+            build-dir: modules/front-end
+            file: ./Dockerfile
           - app: c-teleport/featbit-data-analytics-server
             build-dir: modules/data-analytics
             file: ./Dockerfile
-#          - app: featbit-api-server
-#            build-dir: modules/back-end
-#            file: ./deploy/Dockerfile
-#          - app: featbit-evaluation-server
-#            build-dir: modules/evaluation-server
-#            file: ./deploy/Dockerfile
+          - app: featbit-api-server
+            build-dir: modules/back-end
+            file: ./deploy/Dockerfile
+          - app: featbit-evaluation-server
+            build-dir: modules/evaluation-server
+            file: ./deploy/Dockerfile
     steps:
       - name: Dump GitHub context (run if debug is true)
         if: ${{ github.event.inputs.debug == 'true' }}
