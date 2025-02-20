@@ -32,9 +32,9 @@ jobs:
           - app: c-teleport/featbit-ui
             build-dir: modules/front-end
             file: ./Dockerfile
-          - app: c-teleport/featbit-data-analytics-server
-            build-dir: modules/data-analytics
-            file: ./Dockerfile
+#          - app: c-teleport/featbit-data-analytics-server
+#            build-dir: modules/data-analytics
+#            file: ./Dockerfile
           - app: featbit-api-server
             build-dir: modules/back-end
             file: ./deploy/Dockerfile
