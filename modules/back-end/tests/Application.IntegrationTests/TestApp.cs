@@ -2,18 +2,18 @@ using System.Net.Http.Headers;
 using System.Net.Mime;
 using System.Text;
 using System.Text.Json;
-using Application.Caches;
 using Application.Services;
 using Application.Users;
 using Domain.Users;
-using Infrastructure.Kafka;
-using Infrastructure.Redis;
+using Infrastructure.Caches;
+using Infrastructure.MQ;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Application.IntegrationTests;
@@ -22,6 +22,9 @@ public class TestApp : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.UseSetting(MqProvider.SectionName, MqProvider.None);
+        builder.UseSetting(CacheProvider.SectionName, CacheProvider.None);
+
         builder.ConfigureServices(collection =>
         {
             var passwordHasher = new ServiceDescriptor(
@@ -34,17 +37,17 @@ public class TestApp : WebApplicationFactory<Program>
             collection.Replace(passwordHasher);
             collection.Replace(currentUser);
 
-            collection.Replace(ServiceDescriptor.Singleton<IRedisClient, TestRedisClient>());
-            collection.Replace(ServiceDescriptor.Transient<ICachePopulatingService, TestCachePopulatingService>());
             collection.Replace(ServiceDescriptor.Transient<IWorkspaceService, TestWorkspaceService>());
             collection.Replace(ServiceDescriptor.Transient<IUserService, TestUserService>());
 
-            // remove the kafka consumer from the test application because it is not needed
-            var kafkaConsumerService =
-                collection.FirstOrDefault(x => x.ImplementationType == typeof(KafkaMessageConsumer));
-            if (kafkaConsumerService != null)
+            var hostedServices = collection.Where(x =>
+                x.ServiceType.IsAssignableTo(typeof(IHostedService)) &&
+                x.ImplementationType?.FullName?.Contains("Microsoft") == false
+            ).ToArray();
+
+            foreach (var service in hostedServices)
             {
-                collection.Remove(kafkaConsumerService);
+                collection.Remove(service);
             }
         });
 

@@ -8,10 +8,11 @@ using Application.Services;
 using Domain.Workspaces;
 using Domain.Identity;
 using Infrastructure;
-using Infrastructure.License;
+using Infrastructure.Services;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 using Swashbuckle.AspNetCore.Filters;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -21,6 +22,9 @@ public static class ServicesRegister
 {
     public static WebApplicationBuilder RegisterServices(this WebApplicationBuilder builder)
     {
+        // serilog
+        builder.Services.AddSerilog((_, lc) => ConfigureSerilog.Configure(lc, builder.Configuration));
+
         // add services for controllers
         builder.Services.AddTransient<IConfigureOptions<MvcOptions>, ConfigureMvcOptions>();
         builder.Services.AddControllers();
@@ -106,10 +110,10 @@ public static class ServicesRegister
 
         // authorization
         LicenseVerifier.ImportPublicKey(builder.Configuration["PublicKey"]);
-        builder.Services.AddSingleton<ILicenseService, LicenseService>();
+        builder.Services.AddTransient<ILicenseService, LicenseService>();
         builder.Services.AddSingleton<IPermissionChecker, DefaultPermissionChecker>();
-        builder.Services.AddSingleton<IAuthorizationHandler, PermissionRequirementHandler>();
-        builder.Services.AddSingleton<IAuthorizationHandler, LicenseRequirementHandler>();
+        builder.Services.AddScoped<IAuthorizationHandler, PermissionRequirementHandler>();
+        builder.Services.AddScoped<IAuthorizationHandler, LicenseRequirementHandler>();
         builder.Services.AddAuthorization(options =>
         {
             // iam permission check 

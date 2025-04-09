@@ -23,15 +23,15 @@ public class CreateAccessTokenValidator : AbstractValidator<CreateAccessToken>
     public CreateAccessTokenValidator()
     {
         RuleFor(x => x.Name)
-            .NotEmpty().WithErrorCode(ErrorCodes.NameIsRequired);
+            .NotEmpty().WithErrorCode(ErrorCodes.Required("name"));
 
         RuleFor(x => x.Type)
-            .Must(AccessTokenTypes.IsDefined).WithErrorCode(ErrorCodes.InvalidAccessTokenType);
+            .Must(AccessTokenTypes.IsDefined).WithErrorCode(ErrorCodes.Invalid("type"));
 
         RuleFor(x => x.Permissions)
             .Must(permissions => permissions.Any())
             .Unless(x => x.Type == AccessTokenTypes.Personal)
-            .WithErrorCode(ErrorCodes.ServiceAccessTokenMustDefinePolicies);
+            .WithErrorCode(ErrorCodes.Invalid("permissions"));
     }
 }
 
@@ -80,11 +80,10 @@ public class CreateAccessTokenHandler : IRequestHandler<CreateAccessToken, Acces
             }
         }
 
-        var existed =
-            await _service.FindOneAsync(at => at.OrganizationId == request.OrganizationId && string.Equals(at.Name, request.Name, StringComparison.OrdinalIgnoreCase));
-        if (existed != null)
+        var isNameUsed = await _service.IsNameUsedAsync(request.OrganizationId, request.Name);
+        if (isNameUsed)
         {
-            throw new BusinessException(ErrorCodes.EntityExistsAlready);
+            throw new BusinessException(ErrorCodes.NameHasBeenUsed);
         }
 
         var accessToken =

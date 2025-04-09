@@ -1,5 +1,4 @@
 name: featbit-pro-dev-kafka-ha
-version: "3"
 services:
   ui:
     image: featbit/ui:dev
@@ -26,10 +25,12 @@ services:
       context: ./modules/back-end
       dockerfile: ./deploy/Dockerfile
     environment:
-      - IS_PRO=true
+      - DbProvider=MongoDb
+      - MqProvider=Kafka
+      - CacheProvider=Redis
       - SSOEnabled=false
-      - KAFKA__BOOTSTRAPSERVERS=kafka:9092
-      - KAFKA__CONSUMERSERVERS=kafka-consumer:9092
+      - Kafka__Producer__bootstrap.servers=kafka:9092
+      - Kafka__Consumer__bootstrap.servers=kafka-consumer:9092
     depends_on:
       mongodb:
         condition: service_started
@@ -49,9 +50,11 @@ services:
       context: ./modules/evaluation-server
       dockerfile: ./deploy/Dockerfile
     environment:
-      - IS_PRO=true
-      - KAFKA__BOOTSTRAPSERVERS=kafka:9092
-      - KAFKA__CONSUMERSERVERS=kafka-consumer:9092
+      - DbProvider=MongoDb
+      - MqProvider=Kafka
+      - CacheProvider=Redis
+      - Kafka__Producer__bootstrap.servers=kafka:9092
+      - Kafka__Consumer__bootstrap.servers=kafka-consumer:9092
     depends_on:
       mongodb:
         condition: service_started
@@ -78,13 +81,10 @@ services:
     networks:
       - featbit-network
     environment:
+      DB_PROVIDER: ClickHouse
       KAFKA_HOSTS: kafka:9092
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_DB: 0
       CLICKHOUSE_HOST: clickhouse-server
       CLICKHOUSE_KAFKA_HOSTS: kafka-consumer:9092
-      IS_PRO: true
 
   mongodb:
     image: mongo:5.0.14
@@ -173,8 +173,8 @@ services:
       - DESTINATION=kafka-consumer:9092
       - TOPICS=featbit-feature-flag-change,featbit-segment-change,featbit-endusers,featbit-insights
     networks:
-      - featbit-network    
-
+      - featbit-network
+  
   init-kafka-topics:
     image: bitnami/kafka:3.5
     depends_on:

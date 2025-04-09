@@ -1,5 +1,4 @@
 name: featbit-pro
-version: "3"
 services:
   ui:
     image: featbit/featbit-ui:latest
@@ -17,13 +16,15 @@ services:
   api-server:
     image: featbit/featbit-api-server:latest
     environment:
+      - DbProvider=MongoDb
+      - MqProvider=Kafka
+      - CacheProvider=Redis
       - MongoDb__ConnectionString=mongodb://admin:password@mongodb:27017
       - MongoDb__Database=featbit
       - Kafka__Producer__bootstrap.servers=kafka:9092
       - Kafka__Consumer__bootstrap.servers=kafka:9092
       - Redis__ConnectionString=redis:6379
       - OLAP__ServiceHost=http://da-server
-      - IS_PRO=true
     depends_on:
       - mongodb
       - redis
@@ -37,12 +38,14 @@ services:
   evaluation-server:
     image: featbit/featbit-evaluation-server:latest
     environment:
+      - DbProvider=MongoDb
+      - MqProvider=Kafka
+      - CacheProvider=Redis
       - MongoDb__ConnectionString=mongodb://admin:password@mongodb:27017
       - MongoDb__Database=featbit
       - Kafka__Producer__bootstrap.servers=kafka:9092
       - Kafka__Consumer__bootstrap.servers=kafka:9092
       - Redis__ConnectionString=redis:6379
-      - IS_PRO=true
     depends_on:
       - mongodb
       - kafka
@@ -62,12 +65,10 @@ services:
     networks:
       - featbit-network
     environment:
+      DB_PROVIDER: ClickHouse
       KAFKA_HOSTS: kafka:9092
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
       CLICKHOUSE_HOST: clickhouse-server
       CLICKHOUSE_KAFKA_HOSTS: kafka:9092
-      IS_PRO: true
       CHECK_DB_LIVNESS: true
 
   mongodb:
