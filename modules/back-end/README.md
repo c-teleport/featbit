@@ -38,9 +38,9 @@ requests, and that it can connect to its dependencies (a database, message queue
 | Name            | Description                                                                 | Default Value |
 |-----------------|-----------------------------------------------------------------------------|---------------|
 | `AllowedHosts`  | Hosts allowed to connect to the API                                         | `"*"`         |
-| `DbProvider`    | Database provider, used to select **MongoDB** or **Postgres**               | `"MongoDb"`   |
-| `MqProvider`    | Message Queue provider, used to select **Redis**, **Kafka** or **Postgres** | `"Redis"`     |
-| `CacheProvider` | Cache provider, used to select **Redis** or **None**                        | `"Redis"`     |
+| `DbProvider`    | Database provider, used to select **MongoDB** or **Postgres**               | `"Postgres"`  |
+| `MqProvider`    | Message Queue provider, used to select **Redis**, **Kafka** or **Postgres** | `"Postgres"`  |
+| `CacheProvider` | Cache provider, used to select **Redis** or **None**                        | `"None"`      |
 
 ## Logging
 
@@ -51,11 +51,23 @@ requests, and that it can connect to its dependencies (a database, message queue
 
 ### JWT
 
-| Name            | Description     | Default Value            |
-|-----------------|-----------------|--------------------------|
-| `Jwt__Issuer`   | JWT Issuer Name | `"featbit"`              |
-| `Jwt__Audience` | JWT Audience    | `"featbit-api"`          |
-| `Jwt__Key`      | JWT Private Key | `"featbit-identity-key"` |
+JWT (JSON Web Token) configuration for authentication and authorization.
+
+| Name            | Description     | Default Value                                           |
+|-----------------|-----------------|---------------------------------------------------------|
+| `Jwt__Issuer`   | JWT Issuer Name | `"featbit"`                                             |
+| `Jwt__Audience` | JWT Audience    | `"featbit-api"`                                         |
+| `Jwt__Key`      | JWT Private Key | `"featbit-identity-key-must-longer-than-32-characters"` |
+
+> [!IMPORTANT]
+> **Security Notice**: You must change the `Jwt__Key` value to a secure, randomly generated key that is at least 32
+> characters long.
+>
+> - **Recommended length**: 64 characters (32 characters minimum)
+> - **Generation**: Use a cryptographically secure random generator or tools like [JWT Secrets](https://jwtsecrets.com/)
+> - **Storage**: Keep this key secret and never commit it to version control
+>
+> This key is used for signing JWT tokens and must remain consistent across all API instances.
 
 ### MongoDB
 
@@ -66,9 +78,10 @@ requests, and that it can connect to its dependencies (a database, message queue
 
 ## Postgres
 
-| Name                         | Description                | Default Value                                                                        |
-|------------------------------|----------------------------|--------------------------------------------------------------------------------------|
-| `Postgres__ConnectionString` | Postgres connection string | `"Host=postgres;Port=5432;Username=postgres;Password=0tJXCokSvOB8;Database=featbit"` |
+| Name                         | Description                                                                                      | Default Value                                                                            |
+|------------------------------|--------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
+| `Postgres__ConnectionString` | Postgres connection string                                                                       | `"Host=postgres;Port=5432;Username=postgres;Password=please_change_me;Database=featbit"` |
+| `Postgres__Password`         | Postgres password (Optional). If provided, override the password specified in connection string. | `""`                                                                                     |
 
 ### Redis
 

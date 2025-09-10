@@ -16,16 +16,13 @@ services:
   api-server:
     image: featbit/featbit-api-server:latest
     environment:
-      - DbProvider=MongoDb
-      - MqProvider=Redis
-      - CacheProvider=Redis
-      - MongoDb__ConnectionString=mongodb://admin:password@mongodb:27017
-      - MongoDb__Database=featbit
-      - Redis__ConnectionString=redis:6379
+      - DbProvider=Postgres
+      - MqProvider=Postgres
+      - CacheProvider=None
+      - Postgres__ConnectionString=Host=postgresql;Port=5432;Username=postgres;Password=please_change_me;Database=featbit
       - OLAP__ServiceHost=http://da-server
     depends_on:
-      - mongodb
-      - redis
+      - postgresql
       - da-server
     ports:
       - "5000:5000"
@@ -35,15 +32,12 @@ services:
   evaluation-server:
     image: featbit/featbit-evaluation-server:latest
     environment:
-      - DbProvider=MongoDb
-      - MqProvider=Redis
-      - CacheProvider=Redis
-      - MongoDb__ConnectionString=mongodb://admin:password@mongodb:27017
-      - MongoDb__Database=featbit
-      - Redis__ConnectionString=redis:6379
+      - DbProvider=Postgres
+      - MqProvider=Postgres
+      - CacheProvider=None
+      - Postgres__ConnectionString=Host=postgresql;Port=5432;Username=postgres;Password=please_change_me;Database=featbit
     depends_on:
-      - mongodb
-      - redis
+      - postgresql
     ports:
       - "5100:5100"
     networks:
@@ -52,45 +46,34 @@ services:
   da-server:
     image: featbit/featbit-data-analytics-server:latest
     depends_on:
-      - mongodb
-      - redis
+      - postgresql
     ports:
       - "8200:80"
     networks:
       - featbit-network
     environment:
-      DB_PROVIDER: MongoDb
-      MONGO_URI: mongodb://admin:password@mongodb:27017
-      MONGO_INITDB_DATABASE: featbit
-      MONGO_HOST: mongodb
+      DB_PROVIDER: Postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: please_change_me
+      POSTGRES_HOST: postgresql
+      POSTGRES_PORT: 5432
+      POSTGRES_DATABASE: featbit
       CHECK_DB_LIVNESS: true
 
-  mongodb:
-    image: mongo:5.0.14
+  postgresql:
+    image: postgres:15.10
+    container_name: postgresql
     restart: on-failure
     ports:
-      - "27017:27017"
+      - "5432:5432"
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=password
-      - MONGO_INITDB_DATABASE=featbit
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: please_change_me
     volumes:
-      - mongodb:/data/db
-      - ./infra/mongodb/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/
+      - ./infra/postgresql/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/
+      - postgres:/var/lib/postgresql/data
     networks:
       - featbit-network
-
-  redis:
-    image: bitnami/redis:6.2.10
-    restart: on-failure
-    environment:
-      - ALLOW_EMPTY_PASSWORD=yes
-    networks:
-      - featbit-network
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis:/data
 
 networks:
   featbit-network:
@@ -101,5 +84,4 @@ networks:
         - subnet: 172.10.0.0/16
 
 volumes:
-  mongodb:
-  redis:
+  postgres:

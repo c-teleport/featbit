@@ -30,6 +30,7 @@ services:
       - MqProvider=Redis
       - CacheProvider=Redis
       - MongoDb__ConnectionString=mongodb://admin:password@mongodb:27017
+      - Redis__ConnectionString=redis:6379
     depends_on:
       - mongodb
       - redis
@@ -50,6 +51,7 @@ services:
       - MqProvider=Redis
       - CacheProvider=Redis
       - MongoDb__ConnectionString=mongodb://admin:password@mongodb:27017
+      - Redis__ConnectionString=redis:6379
     depends_on:
       - mongodb
       - redis

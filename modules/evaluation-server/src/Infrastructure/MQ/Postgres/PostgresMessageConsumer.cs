@@ -70,7 +70,7 @@ public partial class PostgresMessageConsumer : BackgroundService
         IEnumerable<IMessageConsumer> handlers,
         ILogger<PostgresMessageConsumer> logger)
     {
-        var builder = new NpgsqlConnectionStringBuilder(configuration["Postgres:ConnectionString"]!)
+        var builder = new NpgsqlConnectionStringBuilder(configuration.GetPostgresConnectionString())
         {
             // override the default keepalive interval and application name
             KeepAlive = KeepAliveIntervalInSeconds,
@@ -108,7 +108,7 @@ public partial class PostgresMessageConsumer : BackgroundService
                 // add missed messages if any
                 await AddMissedMessagesAsync(connection);
 
-                var cts = CancellationTokenSource.CreateLinkedTokenSource(_listenCts.Token, stoppingToken);
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(_listenCts.Token, stoppingToken);
 
                 await connection.ExecuteAsync(ListenChannelsSql, cts.Token);
                 Log.StartListening(_logger, string.Join(',', ListeningChannels));

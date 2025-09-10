@@ -30,8 +30,8 @@ public class PostgresStore(NpgsqlDataSource dataSource) : IDbStore
         await using var connection = await dataSource.OpenConnectionAsync();
 
         var rows = await connection.QueryAsync(
-            "select * from feature_flags where env_id = @envId and updated_at > @time",
-            new { envId, time = DateTime.UnixEpoch.AddMilliseconds(timestamp) }
+            "select * from feature_flags where env_id = @envId and date_trunc('milliseconds', updated_at) > @time",
+            new { envId, time = DateTimeOffset.FromUnixTimeMilliseconds(timestamp) }
         );
 
         return rows.Select(row => SerializeFlag((row as IDictionary<string, object>)!));
@@ -79,10 +79,10 @@ public class PostgresStore(NpgsqlDataSource dataSource) : IDbStore
             return [];
         }
 
-        var rows = await connection.QueryAsync(
+        var results = await connection.QueryAsync(
             """
             select * from segments
-            where updated_at > @time
+            where date_trunc('milliseconds', updated_at) > @time
               and workspace_id = @workspaceId
               and exists (
                   select 1
@@ -92,11 +92,18 @@ public class PostgresStore(NpgsqlDataSource dataSource) : IDbStore
             """,
             new
             {
-                time = DateTime.UnixEpoch.AddMilliseconds(timestamp),
+                time = DateTimeOffset.FromUnixTimeMilliseconds(timestamp),
                 workspaceId = (Guid)rnRow["workspace_id"],
                 envRN = $"{rnRow["rn"] as string}:"
             }
         );
+
+        // replace env_id field for shared segments
+        var rows = results.AsList();
+        foreach (var row in rows)
+        {
+            row.env_id = envId;
+        }
 
         return rows.Select(row => SerializeSegment((row as IDictionary<string, object>)!));
     }
@@ -148,7 +155,7 @@ public class PostgresStore(NpgsqlDataSource dataSource) : IDbStore
         using Utf8JsonWriter writer = new(stream);
 
         // ignore the following properties as they're unnecessary: 
-        // revision, tags, is_archived, created_at, creator_id, updator_id
+        // revision, tags, created_at, creator_id, updator_id
 
         writer.WriteStartObject();
 
@@ -166,6 +173,7 @@ public class PostgresStore(NpgsqlDataSource dataSource) : IDbStore
         writer.WriteJsonString("fallthrough", row["fallthrough"] as string);
         writer.WriteBoolean("exptIncludeAllTargets", (bool)row["expt_include_all_targets"]);
         writer.WriteString("updatedAt", (DateTime)row["updated_at"]);
+        writer.WriteBoolean("isArchived", (bool)row["is_archived"]);
 
         writer.WriteEndObject();
 
@@ -179,7 +187,7 @@ public class PostgresStore(NpgsqlDataSource dataSource) : IDbStore
         using Utf8JsonWriter writer = new(stream);
 
         // ignore the following properties as they're unnecessary:
-        // workspace_id, type, scopes, is_archived, created_at
+        // workspace_id, type, scopes, created_at
         writer.WriteStartObject();
 
         writer.WriteString("id", (Guid)row["id"]);
@@ -190,6 +198,7 @@ public class PostgresStore(NpgsqlDataSource dataSource) : IDbStore
         writer.WriteStringArray("excluded", row["excluded"] as string[]);
         writer.WriteJsonString("rules", row["rules"] as string);
         writer.WriteString("updatedAt", (DateTime)row["updated_at"]);
+        writer.WriteBoolean("isArchived", (bool)row["is_archived"]);
 
         writer.WriteEndObject();
 
