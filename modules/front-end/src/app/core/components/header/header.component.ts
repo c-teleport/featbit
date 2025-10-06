@@ -17,11 +17,13 @@ import { copyToClipboard } from '@utils/index';
 import { EnvService } from '@core/services/env.service';
 import { getCurrentLicense, getCurrentOrganization, getCurrentProjectEnv } from "@utils/project-env";
 import { BroadcastService } from "@services/broadcast.service";
+import { Router } from "@angular/router";
 
 @Component({
-  selector: 'app-header',
-  templateUrl: './header.component.html',
-  styleUrls: [ './header.component.less' ]
+    selector: 'app-header',
+    templateUrl: './header.component.html',
+    styleUrls: ['./header.component.less'],
+    standalone: false
 })
 export class HeaderComponent implements OnInit {
 
@@ -51,6 +53,7 @@ export class HeaderComponent implements OnInit {
     private messageQueueService: MessageQueueService,
     private envService: EnvService,
     private broadcastService: BroadcastService,
+    private router: Router
   ) {
     this.breadcrumbs$ = breadcrumbService.breadcrumbs$;
   }
@@ -155,6 +158,10 @@ export class HeaderComponent implements OnInit {
 
   private async setAllProjects() {
     this.allProjects = await this.projectService.getListAsync();
+  }
+
+  navigateToWorkspace() {
+    this.router.navigateByUrl('/workspace/license').then();
   }
 
   // copy environment key

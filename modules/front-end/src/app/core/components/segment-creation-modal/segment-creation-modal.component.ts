@@ -16,9 +16,10 @@ import { getCurrentLicense, getCurrentOrganization, getCurrentProjectEnv } from 
 import { LicenseFeatureEnum } from "@shared/types";
 
 @Component({
-  selector: 'segment-creation-modal',
-  templateUrl: './segment-creation-modal.component.html',
-  styleUrls: [ './segment-creation-modal.component.less' ]
+    selector: 'segment-creation-modal',
+    templateUrl: './segment-creation-modal.component.html',
+    styleUrls: ['./segment-creation-modal.component.less'],
+    standalone: false
 })
 export class SegmentCreationModalComponent {
   private _isVisible: boolean = false;
@@ -42,13 +43,19 @@ export class SegmentCreationModalComponent {
   }>;
 
   selectedType: SegmentType = SegmentType.EnvironmentSpecific;
-  types: string[] = [
-    $localize`:@@segment.current-environment:Current Environment`,
-    $localize`:@@segment.shareable:Shareable`
+  types = [
+    {
+      label: $localize`:@@segment.current-environment:Current Environment`,
+      value: SegmentType.EnvironmentSpecific
+    },
+    {
+      label: $localize`:@@segment.shareable:Shareable`,
+      value: SegmentType.Shared
+    }
   ]
 
-  typeChanged(type: number) {
-    this.selectedType = type == 0 ? SegmentType.EnvironmentSpecific : SegmentType.Shared;
+  typeChanged(selectedType: string) {
+    this.selectedType = selectedType as SegmentType;
     this.form.reset();
   }
 
